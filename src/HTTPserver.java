@@ -2,6 +2,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -9,10 +11,17 @@ import java.util.concurrent.TimeUnit;
  */
 public class HTTPServer {
 
-    private static final int port = 1234;
-    private ServerSocketChannel ssc;
+    private final ServerSocketChannel ssc;
+    private final int port;
+    private final String directory;
+    private final Map<String, Set<FileOption>> fileOptions;
 
-    public HTTPServer() throws IOException {
+    public HTTPServer(String configFilename) throws IOException {
+        Config config = new Config(configFilename);
+        config.read();
+        directory = config.getDirectory();
+        port = config.getPort();
+        fileOptions = config.getFileOptions();
         ssc = ServerSocketChannel.open();
         ssc.socket().bind(new InetSocketAddress(port));
         ssc.configureBlocking(false);
@@ -34,4 +43,6 @@ public class HTTPServer {
             }
         }
     }
+
+
 }
