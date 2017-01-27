@@ -4,16 +4,21 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.TimeUnit;
 
-public class HTTPserver {
+/**
+ * Created by Trympyrym on 27.01.2017.
+ */
+public class HTTPServer {
 
     private static final int port = 1234;
+    private ServerSocketChannel ssc;
 
-    public static void main(String[] args) throws IOException, InterruptedException {
-	// write your code here
-        ServerSocketChannel ssc = ServerSocketChannel.open();
+    public HTTPServer() throws IOException {
+        ssc = ServerSocketChannel.open();
         ssc.socket().bind(new InetSocketAddress(port));
         ssc.configureBlocking(false);
+    }
 
+    public void mainloop() throws IOException, InterruptedException {
         while (true)
         {
             System.out.println("Waiting for connections");
