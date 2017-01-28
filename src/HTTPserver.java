@@ -59,10 +59,7 @@ public class HTTPServer {
                 }
                 else if (selectionKey.isReadable())
                 {
-                    SocketChannel sc = (SocketChannel)selectionKey.channel();
-                    ByteBuffer buffer = ByteBuffer.allocate(1000);
-                    sc.read(buffer);
-                    executor.submit(new TransferFileTask(sc));
+                    executor.submit(new GetResponseTask((SocketChannel)selectionKey.channel()));
                 }
             }
         }

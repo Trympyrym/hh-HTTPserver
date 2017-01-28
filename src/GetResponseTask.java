@@ -8,18 +8,27 @@ import java.util.TimeZone;
 /**
  * Created by Trympyrym on 28.01.2017.
  */
-public class TransferFileTask implements Runnable {
+public class GetResponseTask implements Runnable {
 
     private final SocketChannel sc;
+    private HTTPRequest request;
 
-    public TransferFileTask(SocketChannel sc) {
+    public GetResponseTask(SocketChannel sc) {
         this.sc = sc;
     }
 
     @Override
     public void run() {
-        ByteBuffer buffer = ByteBuffer.wrap(getTestResponse().getBytes());
+        ByteBuffer readBuffer = ByteBuffer.allocate(1000);
         try {
+            sc.read(readBuffer);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        request = HTTPRequest.parse(new String(readBuffer.array()));
+        ByteBuffer buffer = ByteBuffer.wrap(getResponse().getBytes());
+        try {
+
             sc.write(buffer);
             sc.close();
         } catch (IOException e) {
@@ -27,7 +36,7 @@ public class TransferFileTask implements Runnable {
         }
     }
 
-    private String getTestResponse()
+    private String getResponse()
     {
         String result = "HTTP/1.1 200 OK\n";
 
@@ -41,7 +50,9 @@ public class TransferFileTask implements Runnable {
                 + "Server: SimpleWEBServer\n"
                 + "Pragma: no-cache\n\n";
 
-        result = result + "Hello, world!";
+        result = result + "Hello, world!\n";
+        result = result + "Method: " + request.getHttpMethod() +"\n";
+        result = result + "Requested file: " + request.getRequestedFile() +"\n";
 
         return result;
     }
