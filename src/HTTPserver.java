@@ -1,6 +1,5 @@
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.Map;
 import java.util.Set;
@@ -18,9 +17,10 @@ public class HTTPServer {
     private final Map<String, Set<FileOption>> fileOptions;
     private final Selector selector = Selector.open();
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
+    private final Config config;
 
     public HTTPServer(String configFilename) throws IOException {
-        Config config = new Config(configFilename);
+        config = new Config(configFilename);
         config.read();
         directory = config.getDirectory();
         port = config.getPort();
@@ -43,6 +43,7 @@ public class HTTPServer {
                 continue;
             }
 
+
             Set<SelectionKey> selectionKeys = selector.selectedKeys();
 
             for (SelectionKey selectionKey : selectionKeys)
@@ -59,7 +60,7 @@ public class HTTPServer {
                 }
                 else if (selectionKey.isReadable())
                 {
-                    executor.submit(new GetResponseTask((SocketChannel)selectionKey.channel()));
+                    executor.submit(new GetResponseTask((SocketChannel)selectionKey.channel(), config));
                 }
             }
         }
