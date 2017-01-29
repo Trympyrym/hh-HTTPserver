@@ -1,3 +1,8 @@
+package trympyrymHTTPserver;
+
+import trympyrymHTTPserver.FileServer.FileServer;
+import trympyrymHTTPserver.HTTPserver.HTTPServer;
+
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

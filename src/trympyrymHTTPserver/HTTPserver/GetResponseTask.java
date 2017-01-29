@@ -1,3 +1,7 @@
+package trympyrymHTTPserver.HTTPserver;
+
+import trympyrymHTTPserver.FileServer.FileServer;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -46,7 +50,6 @@ public class GetResponseTask implements Runnable {
         fileServer.transferFile(sc, request.getRequestedFilename());
     }
 
-    // I remember about it when I'm ready to return 4XX codes
     private String getHeader()
     {
         String result = "HTTP/1.1 200 OK\n";

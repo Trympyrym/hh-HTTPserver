@@ -1,8 +1,12 @@
+package trympyrymHTTPserver.HTTPserver;
+
+import trympyrymHTTPserver.Config;
+import trympyrymHTTPserver.FileServer.FileServer;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.*;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
@@ -13,7 +17,6 @@ public class HTTPServer {
 
     private final ServerSocketChannel ssc;
     private final int port;
-    private final Map<String, Set<FileOption>> fileOptions;
     private final Selector selector = Selector.open();
     private final ExecutorService executor;
     private final Config config;
@@ -25,7 +28,6 @@ public class HTTPServer {
         this.fileServer = fileServer;
 
         port = config.getPort();
-        fileOptions = config.getFileOptions();
 
         ssc = ServerSocketChannel.open();
         ssc.socket().bind(new InetSocketAddress(port));
