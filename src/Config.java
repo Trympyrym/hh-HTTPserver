@@ -16,6 +16,12 @@ public class Config {
     private String directory;
     private int port;
 
+    public int getNThreads() {
+        return nThreads;
+    }
+
+    private int nThreads = 4;
+
     public Map<String, Set<FileOption>> getFileOptions() {
         return fileOptions;
     }
@@ -61,6 +67,11 @@ public class Config {
             String[] splittedLine = line.split(" = ");
             String name = splittedLine[0];
             String value = splittedLine[1];
+            if (name.equals("nThreads"))
+            {
+                nThreads = Integer.parseInt(value);
+                return;
+            }
             if (name.equals("directory"))
             {
                 directory = value;

@@ -1,4 +1,6 @@
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Main {
 
@@ -11,7 +13,15 @@ public class Main {
 //        }
 //        String configFilename = args[0];
         String configFilename = "config";
-        HTTPServer httpServer = new HTTPServer(configFilename);
+
+        Config config = new Config(configFilename);
+        config.read();
+
+        ExecutorService executor = Executors.newFixedThreadPool(config.getNThreads());
+
+        FileServer fileServer = new FileServer(config, executor);
+
+        HTTPServer httpServer = new HTTPServer(config, executor, fileServer);
 
         httpServer.mainloop();
     }

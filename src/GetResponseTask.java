@@ -1,8 +1,5 @@
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 import java.text.DateFormat;
 import java.util.Date;
@@ -14,12 +11,12 @@ import java.util.TimeZone;
 public class GetResponseTask implements Runnable {
 
     private final SocketChannel sc;
-    private final Config config;
+    private final FileServer fileServer;
     private HTTPRequest request;
 
-    public GetResponseTask(SocketChannel sc, Config config) {
+    public GetResponseTask(SocketChannel sc, FileServer fileServer) {
         this.sc = sc;
-        this.config = config;
+        this.fileServer = fileServer;
     }
 
     @Override
@@ -46,17 +43,7 @@ public class GetResponseTask implements Runnable {
         {
             sc.write(buffer);
         }
-        FileChannel channel = new FileInputStream(config.getDirectory() +
-                File.separator + request.getRequestedFile()).getChannel();
-        long size = channel.size();
-        long transferred = channel.transferTo(0, size, sc);
-
-        while (transferred < size)
-        {
-            transferred += channel.transferTo(transferred, size - transferred, sc);
-        }
-        channel.close();
-        sc.close();
+        fileServer.transferFile(sc, request.getRequestedFilename());
     }
 
     // I remember about it when I'm ready to return 4XX codes

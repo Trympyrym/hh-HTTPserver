@@ -5,7 +5,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * Created by Trympyrym on 27.01.2017.
@@ -14,16 +13,17 @@ public class HTTPServer {
 
     private final ServerSocketChannel ssc;
     private final int port;
-    private final String directory;
     private final Map<String, Set<FileOption>> fileOptions;
     private final Selector selector = Selector.open();
-    private final ExecutorService executor = Executors.newFixedThreadPool(4);
+    private final ExecutorService executor;
     private final Config config;
+    private final FileServer fileServer;
 
-    public HTTPServer(String configFilename) throws IOException {
-        config = new Config(configFilename);
-        config.read();
-        directory = config.getDirectory();
+    public HTTPServer(Config config, ExecutorService executor, FileServer fileServer) throws IOException {
+        this.config = config;
+        this.executor = executor;
+        this.fileServer = fileServer;
+
         port = config.getPort();
         fileOptions = config.getFileOptions();
 
@@ -35,22 +35,18 @@ public class HTTPServer {
     }
 
     public void mainloop() throws IOException, InterruptedException {
-        while (true)
+        while (selector.select() > -1)
         {
-            int num = selector.select();
             Set<SelectionKey> selectionKeys = selector.selectedKeys();
             Iterator<SelectionKey> iterator = selectionKeys.iterator();
-            System.out.println("outer loop. num = " + num);
 
             while (iterator.hasNext())
             {
-                System.out.println("inner loop");
                 SelectionKey selectionKey = iterator.next();
                 iterator.remove();
                 if (selectionKey.isAcceptable())
                 {
                     SocketChannel sc = ssc.accept();
-                    System.out.println("acceptable");
                     if (sc != null)
                     {
                         sc.configureBlocking(false);
@@ -59,8 +55,7 @@ public class HTTPServer {
                 }
                 else if (selectionKey.isReadable())
                 {
-                    System.out.println("readable");
-                    executor.submit(new GetResponseTask((SocketChannel)selectionKey.channel(), config));
+                    executor.submit(new GetResponseTask((SocketChannel)selectionKey.channel(), fileServer));
                         selectionKey.interestOps(selectionKey.interestOps() ^ SelectionKey.OP_READ);
                 }
             }

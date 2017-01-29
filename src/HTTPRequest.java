@@ -30,7 +30,7 @@ public class HTTPRequest {
         return httpMethod;
     }
 
-    public String getRequestedFile() {
+    public String getRequestedFilename() {
         return requestedFile;
     }
 
