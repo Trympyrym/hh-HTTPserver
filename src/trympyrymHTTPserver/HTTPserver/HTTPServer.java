@@ -57,7 +57,7 @@ public class HTTPServer {
                 }
                 else if (selectionKey.isReadable())
                 {
-                    executor.submit(new GetResponseTask((SocketChannel)selectionKey.channel(), fileServer));
+                    executor.submit(new ResponseTask((SocketChannel)selectionKey.channel(), fileServer));
                         selectionKey.interestOps(selectionKey.interestOps() ^ SelectionKey.OP_READ);
                 }
             }
