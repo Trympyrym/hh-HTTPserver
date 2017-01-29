@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.*;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -27,7 +28,7 @@ public class HTTPServer {
         fileOptions = config.getFileOptions();
 
         ssc = ServerSocketChannel.open();
-        ssc.bind(new InetSocketAddress(port));
+        ssc.socket().bind(new InetSocketAddress(port));
         ssc.configureBlocking(false);
 
         ssc.register(selector, SelectionKey.OP_ACCEPT);
@@ -37,21 +38,19 @@ public class HTTPServer {
         while (true)
         {
             int num = selector.select();
-
-            if (num == 0)
-            {
-                continue;
-            }
-
-
             Set<SelectionKey> selectionKeys = selector.selectedKeys();
+            Iterator<SelectionKey> iterator = selectionKeys.iterator();
+            System.out.println("outer loop. num = " + num);
 
-            for (SelectionKey selectionKey : selectionKeys)
+            while (iterator.hasNext())
             {
+                System.out.println("inner loop");
+                SelectionKey selectionKey = iterator.next();
+                iterator.remove();
                 if (selectionKey.isAcceptable())
                 {
                     SocketChannel sc = ssc.accept();
-
+                    System.out.println("acceptable");
                     if (sc != null)
                     {
                         sc.configureBlocking(false);
@@ -60,7 +59,9 @@ public class HTTPServer {
                 }
                 else if (selectionKey.isReadable())
                 {
+                    System.out.println("readable");
                     executor.submit(new GetResponseTask((SocketChannel)selectionKey.channel(), config));
+                        selectionKey.interestOps(selectionKey.interestOps() ^ SelectionKey.OP_READ);
                 }
             }
         }
