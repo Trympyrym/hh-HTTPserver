@@ -9,10 +9,8 @@ import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -24,11 +22,11 @@ import java.util.stream.Collectors;
 public class FileServer {
     private final ExecutorService executor;
     private final Map<String, Set<FileOption>> fileOptions;
-    private final String directory;
-    private Map<Path, ByteBuffer> cachedFiles = new HashMap<>();
+    private final Config config;
+    private Map<Path, ConcurrentLinkedQueue<ByteBuffer>> cachedFiles = new HashMap<>();
 
     public FileServer(Config config, ExecutorService executorService) {
-        this.directory = config.getDirectory();
+        this.config = config;
 
         this.executor = executorService;
 
@@ -36,30 +34,7 @@ public class FileServer {
     }
 
     public void start() throws IOException, ExecutionException, InterruptedException {
-        List<Path> filepaths = Files.walk(Paths.get(directory))
-                .filter(Files::isRegularFile)
-                .collect(Collectors.toList());
-        Map<Path, Future<ByteBuffer>> futures = new HashMap<>();
-        for (Path filepath : filepaths)
-        {
-            futures.put(filepath, executor.submit(new CacheTask(filepath)));
-        }
-        int counter = 0;
-        int size = futures.size();
-
-        while (counter < size)
-        {
-            counter = 0;
-            for (Map.Entry<Path, Future<ByteBuffer>> entry : futures.entrySet())
-            {
-                counter += entry.getValue().isDone() ? 1 : 0;
-            }
-        }
-
-        for (Map.Entry<Path, Future<ByteBuffer>> entry : futures.entrySet())
-        {
-            cachedFiles.put(entry.getKey(), entry.getValue().get());
-        }
+        cacheFiles();
     }
 
 
@@ -78,11 +53,16 @@ public class FileServer {
 //        return 0;
     }
     public void transferFile(SocketChannel channelTo, String filename) throws IOException {
-        ByteBuffer buffer = cachedFiles.get(getPath(filename));
-        buffer.rewind();
-        while (buffer.hasRemaining())
+        for (ByteBuffer buffer : cachedFiles.get(getPath(filename)))
         {
-            channelTo.write(buffer);
+            synchronized (buffer)
+            {
+                buffer.rewind();
+                while (buffer.hasRemaining())
+                {
+                    channelTo.write(buffer);
+                }
+            }
         }
         channelTo.close();
 //        FileChannel channel = FileChannel.open(getPath(filename));
@@ -99,6 +79,34 @@ public class FileServer {
 
     private Path getPath(String filename)
     {
-        return Paths.get(directory + File.separator + filename);
+        return Paths.get(config.getDirectory() + File.separator + filename);
+    }
+
+    private void cacheFiles() throws IOException, ExecutionException, InterruptedException {
+        List<Path> filepaths = Files.walk(Paths.get(config.getDirectory()))
+                .filter(Files::isRegularFile)
+                .collect(Collectors.toList());
+        Map<Path, Future<ConcurrentLinkedQueue<ByteBuffer>>> futures = new HashMap<>();
+        for (Path filepath : filepaths)
+        {
+            futures.put(filepath, executor.submit(
+                    new CacheTask(filepath, config)));
+        }
+        int counter = 0;
+        int size = futures.size();
+
+        while (counter < size)
+        {
+            counter = 0;
+            for (Map.Entry<Path, Future<ConcurrentLinkedQueue<ByteBuffer>>> entry : futures.entrySet())
+            {
+                counter += entry.getValue().isDone() ? 1 : 0;
+            }
+        }
+
+        for (Map.Entry<Path, Future<ConcurrentLinkedQueue<ByteBuffer>>> entry : futures.entrySet())
+        {
+            cachedFiles.put(entry.getKey(), entry.getValue().get());
+        }
     }
 }

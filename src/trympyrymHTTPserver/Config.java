@@ -19,12 +19,18 @@ public class Config {
 
     private String directory;
     private int port;
+    private int nThreads = 4;
+    private int minCacheBlock = 100000;
+
 
     public int getNThreads() {
         return nThreads;
     }
 
-    private int nThreads = 4;
+    public int getMinCacheBlock() {
+        return minCacheBlock;
+    }
+
 
     public Map<String, Set<FileOption>> getFileOptions() {
         return fileOptions;
@@ -71,6 +77,11 @@ public class Config {
             String[] splittedLine = line.split(" = ");
             String name = splittedLine[0];
             String value = splittedLine[1];
+            if (name.equals("minCacheBlock"))
+            {
+                minCacheBlock = Integer.parseInt(value);
+                return;
+            }
             if (name.equals("nThreads"))
             {
                 nThreads = Integer.parseInt(value);
