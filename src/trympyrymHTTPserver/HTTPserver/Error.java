@@ -9,58 +9,56 @@ import java.util.TimeZone;
  */
 public enum Error {
     METHOD_NOT_ALLOWED {
-        public String getResponse()
-        {
-            String result = "HTTP/1.1 405 Method not allowed\n";
+        @Override
+        String getStatus() {
+            return "405 Method not allowed";
+        }
 
-            DateFormat df = DateFormat.getTimeInstance();
-            df.setTimeZone(TimeZone.getTimeZone("GMT"));
-            result = result + "Date: " + df.format(new Date()) + "\n";
-
-            result = result
-                    + "Content-Type: text/html\n"
-                    + "Connection: close\n"
-                    + "Server: TrympyrymHTTPServer\n"
-                    + "Pragma: no-cache\n\n";
-            return result + "Only GET requests supported.";
+        @Override
+        String getBody() {
+            return "Only GET requests supported.";
         }
     },
     NOT_FOUND{
-        public String getResponse()
-        {
-            String result = "HTTP/1.1 404 Not found\n";
+        @Override
+        String getStatus() {
+            return "404 Not found";
+        }
 
-            DateFormat df = DateFormat.getTimeInstance();
-            df.setTimeZone(TimeZone.getTimeZone("GMT"));
-            result = result + "Date: " + df.format(new Date()) + "\n";
-
-            result = result
-                    + "Content-Type: text/html\n"
-                    + "Connection: close\n"
-                    + "Server: TrympyrymHTTPServer\n"
-                    + "Pragma: no-cache\n\n";
-
-            return result + "File not found.";
+        @Override
+        String getBody() {
+            return "File not found.";
         }
     },
     BAD_REQUEST{
-        public String getResponse()
-        {
-            String result = "HTTP/1.1 400 Bad request\n";
+        @Override
+        String getStatus() {
+            return "400 Bad request";
+        }
 
-            DateFormat df = DateFormat.getTimeInstance();
-            df.setTimeZone(TimeZone.getTimeZone("GMT"));
-            result = result + "Date: " + df.format(new Date()) + "\n";
-
-            result = result
-                    + "Content-Type: text/html\n"
-                    + "Connection: close\n"
-                    + "Server: TrympyrymHTTPServer\n"
-                    + "Pragma: no-cache\n\n";
-
-            return result + "Cant parse your request or some params are invalid.";
+        @Override
+        String getBody() {
+            return "Cant parse your request or some params are invalid.";
         }
     };
 
-    public abstract String getResponse();
+    //dunno how to make private
+    abstract String getStatus();
+    abstract String getBody();
+    public String getResponse()
+    {
+        String result = "HTTP/1.1 " + getStatus() + "\n";
+
+        DateFormat df = DateFormat.getTimeInstance();
+        df.setTimeZone(TimeZone.getTimeZone("GMT"));
+        result = result + "Date: " + df.format(new Date()) + "\n";
+
+        result = result
+                + "Content-Type: text/html\n"
+                + "Connection: close\n"
+                + "Server: TrympyrymHTTPServer\n"
+                + "Pragma: no-cache\n\n";
+
+        return result + getBody();
+    };
 }

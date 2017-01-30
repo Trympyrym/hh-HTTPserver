@@ -8,23 +8,6 @@ import java.util.Map;
  */
 public class HTTPRequest {
 
-    private static Map<String, String> allowedFileExtendions = new HashMap<>();
-    static
-    {
-        allowedFileExtendions.put("htm", "text/html");
-        allowedFileExtendions.put("html", "text/html");
-        allowedFileExtendions.put("htmls", "text/html");
-        allowedFileExtendions.put("shtml", "text/html");
-        allowedFileExtendions.put("js", "application/javascript");
-        allowedFileExtendions.put("jfif", "image/jpeg");
-        allowedFileExtendions.put("jfif-tbnl", "image/jpeg");
-        allowedFileExtendions.put("jpe", "image/jpeg");
-        allowedFileExtendions.put("jpeg", "image/jpeg");
-        allowedFileExtendions.put("jpg", "image/jpeg");
-
-        allowedFileExtendions.put("txt", "text/plain");
-    }
-
     public static HTTPRequest parse(String argString)
     {
         try
@@ -59,18 +42,16 @@ public class HTTPRequest {
     private final HTTPMethod httpMethod;
     private final String requestedFilename;
 
-    private final String extension;
     private final boolean valid;
-    private final String mimeType;
+    private final MIMEType mimeType;
 
     private HTTPRequest(HTTPMethod method, String filename, String extension)
     {
         this.httpMethod = method;
         this.requestedFilename = filename;
-        this.extension = extension;
+        this.mimeType = MIMEType.getByExtension(extension);
         this.valid = (method != null) && (filename != null) && (extension != null)
-                && HTTPRequest.allowedFileExtendions.containsKey(extension);
-        this.mimeType = (this.valid) ? (HTTPRequest.allowedFileExtendions.get(extension)) : (null);
+                && (mimeType != null);
     }
 
 
@@ -86,7 +67,7 @@ public class HTTPRequest {
         return valid;
     }
 
-    public String getMimeType() {
+    public MIMEType getMimeType() {
         return mimeType;
     }
 

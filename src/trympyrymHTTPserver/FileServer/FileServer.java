@@ -78,7 +78,6 @@ public class FileServer {
 //        return 0;
     }
     public void transferFile(SocketChannel channelTo, String filename) throws IOException {
-        System.out.println("transfer begin");
         ByteBuffer buffer = cachedFiles.get(getPath(filename));
         buffer.rewind();
         while (buffer.hasRemaining())

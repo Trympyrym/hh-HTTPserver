@@ -80,7 +80,7 @@ public class ResponseTask implements Runnable {
         result = result + "Date: " + df.format(new Date()) + "\n";
 
         result = result
-                + "Content-Type: text/plain\n"
+                + "Content-Type: " + request.getMimeType() + "\n"
                 + "Connection: close\n"
                 + "Server: TrympyrymHTTPServer\n"
                 + "Pragma: no-cache\n\n";
