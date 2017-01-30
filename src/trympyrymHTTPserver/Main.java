@@ -4,12 +4,13 @@ import trympyrymHTTPserver.FileServer.FileServer;
 import trympyrymHTTPserver.HTTPserver.HTTPServer;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Main {
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) throws IOException, InterruptedException, ExecutionException {
 	// write your code here
 //        if (args.length == 0)
 //        {
@@ -25,6 +26,9 @@ public class Main {
         ExecutorService executor = Executors.newFixedThreadPool(config.getNThreads());
 
         FileServer fileServer = new FileServer(config, executor);
+        System.out.println("File server is about to start");
+        fileServer.start();
+        System.out.println("File server started");
 
         HTTPServer httpServer = new HTTPServer(config, executor, fileServer);
 

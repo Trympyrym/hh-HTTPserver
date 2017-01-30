@@ -32,7 +32,6 @@ public class ResponseTask implements Runnable {
             e.printStackTrace();
         }
         request = HTTPRequest.parse(new String(readBuffer.array()));
-        System.out.println("incoming message is valid: " + request.isValid());
         if (!request.isValid())
         {
             try {
