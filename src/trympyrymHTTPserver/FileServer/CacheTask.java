@@ -38,7 +38,7 @@ public class CacheTask implements Runnable {
         FileLock lock = null;
         try {
             channel = FileChannel.open(filepath);
-            lock = channel.lock();
+            //lock = channel.lock();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -75,7 +75,7 @@ public class CacheTask implements Runnable {
         }
         try {
             channel.close();
-            lock.release();
+            //lock.release();
         } catch (IOException e) {
             e.printStackTrace();
         }

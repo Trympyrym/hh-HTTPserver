@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -105,7 +104,7 @@ public class FileServer {
         if (isNonCachedStoredFile)
         {
             FileChannel channel = FileChannel.open(filepath);
-            FileLock lock = channel.lock();
+            //FileLock lock = channel.lock();
             long size = channel.size();
             long transferred = channel.transferTo(0, size, channelTo);
 
@@ -114,7 +113,7 @@ public class FileServer {
                 transferred += channel.transferTo(transferred, size - transferred, channelTo);
             }
             channel.close();
-            lock.release();
+            //lock.release();
         }
 
         channelTo.close();

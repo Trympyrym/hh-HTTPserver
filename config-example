@@ -1,10 +1,10 @@
 directory = files
 port = 1234
 NO_CACHE
-a
+a.html
 qw
 e
 IGNORE
 e
-qw
-sssss
+qw.jpg
+example2.txt

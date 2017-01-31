@@ -13,10 +13,9 @@ public class Main {
     public static void main(String[] args) throws IOException, InterruptedException, ExecutionException {
 	    if (args.length == 0)
         {
-            System.out.println("Not enough arguments.");
-            return;
+            System.out.println("Not enough arguments. Default used");
         }
-        String configFilename = args[0];
+        String configFilename = args.length > 0 ? args[0] : "config";
 
         Config config = new Config(configFilename);
         config.read();
