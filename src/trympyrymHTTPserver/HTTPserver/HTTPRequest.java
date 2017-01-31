@@ -22,7 +22,7 @@ public class HTTPRequest {
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            System.out.println("Bad request incoming");
             return new HTTPRequest(null, null, null);
         }
     }

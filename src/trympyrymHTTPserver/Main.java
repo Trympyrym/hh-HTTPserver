@@ -23,15 +23,17 @@ public class Main {
         Config config = new Config(configFilename);
         config.read();
 
+        System.out.println("Config loaded");
+
         ExecutorService executor = Executors.newFixedThreadPool(config.getNThreads());
 
         FileServer fileServer = new FileServer(config, executor);
-        System.out.println("File server is about to start");
         fileServer.start();
         System.out.println("File server started");
 
         HTTPServer httpServer = new HTTPServer(config, executor, fileServer);
 
+        System.out.println("HTTP server starting");
         httpServer.mainloop();
     }
 }

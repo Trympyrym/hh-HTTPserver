@@ -66,6 +66,7 @@ public class ResponseTask implements Runnable {
         {
             returnErrorPage(Error.NOT_FOUND);
             sc.close();
+            return;
         }
         sendString(getHeader());
         fileServer.transferFile(sc, request.getRequestedFilename());

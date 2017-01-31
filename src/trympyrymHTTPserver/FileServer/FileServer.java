@@ -10,7 +10,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -23,7 +22,7 @@ public class FileServer {
     private final ExecutorService executor;
     private final Map<String, Set<FileOption>> fileOptions;
     private final Config config;
-    private Map<Path, ConcurrentLinkedQueue<ByteBuffer>> cachedFiles = new HashMap<>();
+    private Map<Path, ByteBuffer[]> cachedFiles = new HashMap<>();
 
     public FileServer(Config config, ExecutorService executorService) {
         this.config = config;
@@ -35,12 +34,17 @@ public class FileServer {
 
     public void start() throws IOException, ExecutionException, InterruptedException {
         cacheFiles();
+        Thread watchThread = new Thread(new WatchTask(executor, config, cachedFiles));
+        watchThread.start();
     }
 
 
     public int checkFile(String filename)
     {
-        return  (cachedFiles.containsKey(getPath(filename))) ? 0 : 404;
+        synchronized (cachedFiles)
+        {
+            return  (cachedFiles.containsKey(getPath(filename))) ? 0 : 404;
+        }
 //        Path path = getPath(filename);
 //        if (!Files.exists(path) || !Files.isRegularFile(path))
 //        {
@@ -53,8 +57,18 @@ public class FileServer {
 //        return 0;
     }
     public void transferFile(SocketChannel channelTo, String filename) throws IOException {
-        for (ByteBuffer buffer : cachedFiles.get(getPath(filename)))
+        ByteBuffer[] cachedFile;
+        synchronized (cachedFiles)
         {
+            cachedFile = cachedFiles.get(getPath(filename));
+        }
+        for (int i = 0; i < cachedFile.length; i++)
+        {
+            ByteBuffer buffer;
+            synchronized (cachedFile)
+            {
+                buffer = cachedFile[i];
+            }
             synchronized (buffer)
             {
                 buffer.rewind();
@@ -86,11 +100,11 @@ public class FileServer {
         List<Path> filepaths = Files.walk(Paths.get(config.getDirectory()))
                 .filter(Files::isRegularFile)
                 .collect(Collectors.toList());
-        Map<Path, Future<ConcurrentLinkedQueue<ByteBuffer>>> futures = new HashMap<>();
+        Map<Path, Future> futures = new HashMap<>();
         for (Path filepath : filepaths)
         {
             futures.put(filepath, executor.submit(
-                    new CacheTask(filepath, config)));
+                    new CacheTask(filepath, config, cachedFiles)));
         }
         int counter = 0;
         int size = futures.size();
@@ -98,15 +112,10 @@ public class FileServer {
         while (counter < size)
         {
             counter = 0;
-            for (Map.Entry<Path, Future<ConcurrentLinkedQueue<ByteBuffer>>> entry : futures.entrySet())
+            for (Map.Entry<Path, Future> entry : futures.entrySet())
             {
                 counter += entry.getValue().isDone() ? 1 : 0;
             }
-        }
-
-        for (Map.Entry<Path, Future<ConcurrentLinkedQueue<ByteBuffer>>> entry : futures.entrySet())
-        {
-            cachedFiles.put(entry.getKey(), entry.getValue().get());
         }
     }
 }
