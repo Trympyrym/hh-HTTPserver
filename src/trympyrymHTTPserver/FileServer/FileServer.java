@@ -1,10 +1,12 @@
 package trympyrymHTTPserver.FileServer;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import trympyrymHTTPserver.Config;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,7 +22,7 @@ import java.util.stream.Collectors;
  */
 public class FileServer {
     private final ExecutorService executor;
-    private final Map<String, Set<FileOption>> fileOptions;
+    private final Map<Path, Set<FileOption>> fileOptions;
     private final Config config;
     private Map<Path, ByteBuffer[]> cachedFiles = new HashMap<>();
 
@@ -33,7 +35,7 @@ public class FileServer {
     }
 
     public void start() throws IOException, ExecutionException, InterruptedException {
-        cacheFiles();
+        cacheAllFiles();
         Thread watchThread = new Thread(new WatchTask(executor, config, cachedFiles));
         watchThread.start();
     }
@@ -41,54 +43,79 @@ public class FileServer {
 
     public int checkFile(String filename)
     {
-        synchronized (cachedFiles)
+        Path filepath = getPath(filename);
+        Map<FileOption, Boolean> currentFileOptions = getOptionsCopy(filepath);
+        boolean isIgnoredFile = currentFileOptions.get(FileOption.IGNORE);
+        boolean isNonCachedStoredFile = !isIgnoredFile && currentFileOptions.get(FileOption.NO_CACHE);
+        boolean isCachedFile = !isIgnoredFile && !isNonCachedStoredFile;
+        if (isCachedFile)
         {
-            return  (cachedFiles.containsKey(getPath(filename))) ? 0 : 404;
+            synchronized (cachedFiles)
+            {
+                return  (cachedFiles.containsKey(filepath)) ? 0 : 404;
+            }
         }
-//        Path path = getPath(filename);
-//        if (!Files.exists(path) || !Files.isRegularFile(path))
-//        {
-//            return 404;
-//        }
-//        if (!Files.isReadable(path))
-//        {
-//            return 403;
-//        }
-//        return 0;
+        if (isNonCachedStoredFile)
+        {
+            if (!Files.exists(filepath) || !Files.isRegularFile(filepath))
+            {
+                return 404;
+            }
+            if (!Files.isReadable(filepath))
+            {
+                return 403;
+            }
+            return 0;
+        }
+        return 404;
     }
     public void transferFile(SocketChannel channelTo, String filename) throws IOException {
-        ByteBuffer[] cachedFile;
-        synchronized (cachedFiles)
+
+        Path filepath = getPath(filename);
+        Map<FileOption, Boolean> currentFileOptions = getOptionsCopy(filepath);
+
+        boolean isIgnoredFile = currentFileOptions.get(FileOption.IGNORE);
+        boolean isNonCachedStoredFile = !isIgnoredFile && currentFileOptions.get(FileOption.NO_CACHE);
+        boolean isCachedFile = !isIgnoredFile && !isNonCachedStoredFile;
+
+        if (isCachedFile)
         {
-            cachedFile = cachedFiles.get(getPath(filename));
-        }
-        for (int i = 0; i < cachedFile.length; i++)
-        {
-            ByteBuffer buffer;
-            synchronized (cachedFile)
+            ByteBuffer[] cachedFile;
+            synchronized (cachedFiles)
             {
-                buffer = cachedFile[i];
+                cachedFile = cachedFiles.get(filepath);
             }
-            synchronized (buffer)
+            for (int i = 0; i < cachedFile.length; i++)
             {
-                buffer.rewind();
-                while (buffer.hasRemaining())
+                ByteBuffer buffer;
+                synchronized (cachedFile)
                 {
-                    channelTo.write(buffer);
+                    buffer = cachedFile[i];
+                }
+                synchronized (buffer)
+                {
+                    buffer.rewind();
+                    while (buffer.hasRemaining())
+                    {
+                        channelTo.write(buffer);
+                    }
                 }
             }
         }
+        if (isNonCachedStoredFile)
+        {
+            FileChannel channel = FileChannel.open(filepath);
+            long size = channel.size();
+            long transferred = channel.transferTo(0, size, channelTo);
+
+            while (transferred < size)
+            {
+                transferred += channel.transferTo(transferred, size - transferred, channelTo);
+            }
+            channel.close();
+        }
+
         channelTo.close();
-//        FileChannel channel = FileChannel.open(getPath(filename));
-//        long size = channel.size();
-//        long transferred = channel.transferTo(0, size, channelTo);
-//
-//        while (transferred < size)
-//        {
-//            transferred += channel.transferTo(transferred, size - transferred, channelTo);
-//        }
-//        channel.close();
-//        channelTo.close();
     }
 
     private Path getPath(String filename)
@@ -96,15 +123,18 @@ public class FileServer {
         return Paths.get(config.getDirectory() + File.separator + filename);
     }
 
-    private void cacheFiles() throws IOException, ExecutionException, InterruptedException {
+    private void cacheAllFiles() throws IOException, ExecutionException, InterruptedException {
         List<Path> filepaths = Files.walk(Paths.get(config.getDirectory()))
                 .filter(Files::isRegularFile)
                 .collect(Collectors.toList());
         Map<Path, Future> futures = new HashMap<>();
         for (Path filepath : filepaths)
         {
-            futures.put(filepath, executor.submit(
-                    new CacheTask(filepath, config, cachedFiles)));
+            if (!fileOptions.containsKey(filepath))
+            {
+                futures.put(filepath, executor.submit(
+                        new CacheTask(filepath, config, cachedFiles)));
+            }
         }
         int counter = 0;
         int size = futures.size();
@@ -117,5 +147,32 @@ public class FileServer {
                 counter += entry.getValue().isDone() ? 1 : 0;
             }
         }
+    }
+
+    private Map<FileOption, Boolean> getOptionsCopy(Path filepath)
+    {
+        Map<FileOption, Boolean> result = new HashMap<>();
+        synchronized (fileOptions)
+        {
+            if (fileOptions.containsKey(filepath))
+            {
+                Set<FileOption> options = fileOptions.get(filepath);
+                synchronized (options)
+                {
+                    for (FileOption option : FileOption.values())
+                    {
+                        result.put(option, options.contains(option));
+                    }
+                }
+            }
+            else
+            {
+                for (FileOption option : FileOption.values())
+                {
+                    result.put(option, false);
+                }
+            }
+        }
+        return result;
     }
 }

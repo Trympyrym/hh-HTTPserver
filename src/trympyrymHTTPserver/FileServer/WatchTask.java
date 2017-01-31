@@ -38,7 +38,11 @@ public class WatchTask implements Runnable {
                 {
                     WatchEvent.Kind kind = event.kind();
                     if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
-                        executor.submit(new CacheTask(getPath((Path)event.context()), config, cachedFiles));
+                        Path filepath = getPath((Path)event.context());
+                        if (!config.getFileOptions().containsKey(filepath))
+                        {
+                            executor.submit(new CacheTask(filepath, config, cachedFiles));
+                        }
                     }
                     if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
                         synchronized (cachedFiles)
@@ -61,12 +65,7 @@ public class WatchTask implements Runnable {
 
     private Path getPath(Path wrongPath)
     {
-        //Play more this soft French tambourine so drink tea
-
-        String wrongPathAsString = wrongPath.toString();
-        String wrongAbsolutePathAsString = wrongPath.toAbsolutePath().toString();
-        String wrongDirectory = wrongAbsolutePathAsString.substring(0,
-                wrongAbsolutePathAsString.lastIndexOf(wrongPathAsString));
-        return Paths.get(config.getDirectory() + File.separator + wrongPathAsString);
+        //Play more this soft French tambourine so drink tea @Google translate
+        return Paths.get(config.getDirectory() + File.separator + wrongPath.toString());
     }
 }

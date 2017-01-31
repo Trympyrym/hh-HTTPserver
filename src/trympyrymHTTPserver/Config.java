@@ -4,6 +4,7 @@ import trympyrymHTTPserver.FileServer.FileOption;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,11 +33,11 @@ public class Config {
     }
 
 
-    public Map<String, Set<FileOption>> getFileOptions() {
+    public Map<Path, Set<FileOption>> getFileOptions() {
         return fileOptions;
     }
 
-    private Map<String, Set<FileOption>> fileOptions = new HashMap<>();
+    private Map<Path, Set<FileOption>> fileOptions = new HashMap<>();
 
     private ParserState state;
 
@@ -103,19 +104,23 @@ public class Config {
         {
             if (!fileOptions.containsKey(line))
             {
-                fileOptions.put(line, new HashSet<>());
+                fileOptions.put(getPath(line), new HashSet<>());
             }
-            fileOptions.get(line).add(FileOption.NO_CACHE);
+            fileOptions.get(getPath(line)).add(FileOption.NO_CACHE);
         }
         if (state == ParserState.READING_FILES_IGNORE)
         {
             if (!fileOptions.containsKey(line))
             {
-                fileOptions.put(line, new HashSet<>());
+                fileOptions.put(getPath(line), new HashSet<>());
             }
-            fileOptions.get(line).add(FileOption.IGNORE);
+            fileOptions.get(getPath(line)).add(FileOption.IGNORE);
         }
+    }
 
+    private Path getPath(String argString)
+    {
+        return Paths.get(directory + File.separator + argString);
     }
 
 
