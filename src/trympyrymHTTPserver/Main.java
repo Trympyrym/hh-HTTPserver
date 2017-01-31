@@ -11,14 +11,12 @@ import java.util.concurrent.Executors;
 public class Main {
 
     public static void main(String[] args) throws IOException, InterruptedException, ExecutionException {
-	// write your code here
-//        if (args.length == 0)
-//        {
-//            System.out.println("Not enough arguments.");
-//            return;
-//        }
-//        String configFilename = args[0];
-        String configFilename = "config";
+	    if (args.length == 0)
+        {
+            System.out.println("Not enough arguments.");
+            return;
+        }
+        String configFilename = args[0];
 
         Config config = new Config(configFilename);
         config.read();

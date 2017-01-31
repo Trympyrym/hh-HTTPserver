@@ -5,6 +5,7 @@ import trympyrymHTTPserver.Config;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -34,8 +35,10 @@ public class CacheTask implements Runnable {
     @Override
     public void run(){
         FileChannel channel = null;
+        FileLock lock = null;
         try {
             channel = FileChannel.open(filepath);
+            lock = channel.lock();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -72,6 +75,7 @@ public class CacheTask implements Runnable {
         }
         try {
             channel.close();
+            lock.release();
         } catch (IOException e) {
             e.printStackTrace();
         }
